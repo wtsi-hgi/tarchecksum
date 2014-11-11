@@ -85,9 +85,6 @@ def parse_args():
 # Get args from user:
 args = parse_args()
 
-# args.dir = "/home/ic4/Work/Projects/tar_and_check/"
-# args.tar_path = '/home/ic4/Work/Projects/tar_and_check/test-data.tar.bz2'
-
 checksum_and_compare(args.tar_path, args.dir)
 
 
