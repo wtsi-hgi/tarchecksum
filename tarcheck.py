@@ -23,6 +23,16 @@ __author__ = 'ic4'
 # this program. If not, see <http://www.gnu.org/licenses/>.
 #
 #################################################################################
+
+This module has been written for checksumming all the files in a tar archive and comparing
+the checksums against the ones of the original files. In case the md5 sums don't match,
+there will be an error message outputted. Otherwise if all goes well, there is no message.
+
+Example:
+
+$python tarcheck.py --tar_path /path/to/archive/archive.tar.bz2 --dir /path/to/the/archived/dir
+
+
 """
 
 
