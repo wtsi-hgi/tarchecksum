@@ -35,6 +35,14 @@ import hashlib
 
 
 def calculate_md5(file_obj, block_size=2 ** 20):
+    """
+    :param file_obj: file
+        The file object to checksum
+    :param block_size: int
+        The size of the blocks to be read and checksumed
+    :return: checksum: string
+        The checksum as a string
+    """
     md5 = hashlib.md5()
     while True:
         data = file_obj.read(block_size)
@@ -46,25 +54,32 @@ def calculate_md5(file_obj, block_size=2 ** 20):
 
 
 def checksum_and_compare(archive_path, raw_dir_path):
-    #chunk_size = 100 * 1024
-    tar = tarfile.open(name=archive_path, mode="r|*")
-    for tar_info in tar:
-        if not tar_info.isfile():
-            continue
-        extr_file = tar.extractfile(tar_info)
+    """
+    :param archive_path: str
+        The full path to the archive
+    :param raw_dir_path: str
+        The full path to the archived directory
+    :return: None
+    """
+    with tarfile.open(name=archive_path, mode="r|*") as tar:
+        for tar_info in tar:
+            if not tar_info.isfile():
+                continue
+            extr_file = tar.extractfile(tar_info)
 
-        # Checksum the tared up file:
-        arch_file_md5 = calculate_md5(extr_file)
+            # Checksum the tared up file:
+            arch_file_md5 = calculate_md5(extr_file)
 
-        # Checksum the raw file
-        with open(os.path.join(raw_dir_path, tar_info.path)) as raw_file:
-            raw_file_md5 = calculate_md5(raw_file)
+            # Checksum the raw file
+            with open(os.path.join(raw_dir_path, tar_info.path)) as raw_file:
+                raw_file_md5 = calculate_md5(raw_file)
 
 
-        # Compare md5s:
-        if raw_file_md5 != arch_file_md5:
-            print "ERROR -- md5s don't match! File="+tar_info.path+ " md5_raw_file="+raw_file_md5+" and md5_archived_file="+arch_file_md5
-        tar.members = []
+            # Compare md5s:
+            if raw_file_md5 != arch_file_md5:
+                print "ERROR -- md5s don't match! File="+tar_info.path+ " md5_raw_file="+raw_file_md5+" and md5_archived_file="+arch_file_md5
+            tar.members = []
+
 
 
 def parse_args():
