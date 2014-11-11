@@ -35,7 +35,6 @@ import hashlib
 
 
 def calculate_md5(file_obj, block_size=2 ** 20):
-    #file_obj = open(file_path, 'rb')
     md5 = hashlib.md5()
     while True:
         data = file_obj.read(block_size)
@@ -47,8 +46,7 @@ def calculate_md5(file_obj, block_size=2 ** 20):
 
 
 def checksum_and_compare(archive_path, raw_dir_path):
-    chunk_size = 100 * 1024
-    files_md5_dict = {}
+    #chunk_size = 100 * 1024
     tar = tarfile.open(name=archive_path, mode="r|*")
     for tar_info in tar:
         if not tar_info.isfile():
@@ -59,8 +57,9 @@ def checksum_and_compare(archive_path, raw_dir_path):
         arch_file_md5 = calculate_md5(extr_file)
 
         # Checksum the raw file
-        raw_file = open(os.path.join(raw_dir_path, tar_info.path))
-        raw_file_md5 = calculate_md5(raw_file)
+        with open(os.path.join(raw_dir_path, tar_info.path)) as raw_file:
+            raw_file_md5 = calculate_md5(raw_file)
+
 
         # Compare md5s:
         if raw_file_md5 != arch_file_md5:
@@ -70,8 +69,8 @@ def checksum_and_compare(archive_path, raw_dir_path):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--tar_path', required=False, type=file, help='Path to the tar archive')
-    parser.add_argument('--dir', required=False, type=file, help='Path to the directory that has been archived')
+    parser.add_argument('--tar_path', required=True, help='Path to the tar archive')
+    parser.add_argument('--dir', required=True, help='Path to the directory that has been archived')
 
     try:
         args = parser.parse_args()
