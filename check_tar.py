@@ -9,38 +9,6 @@ import os
 __author__ = 'ic4'
 
 
-def tarsum1(input_file, hash, output_file):
-    """
-        input_file  - A FILE object to read the tar file from.
-        hash - The name of the hash to use. Must be supported by hashlib.
-        output_file - A FILE to write the computed signatures to.
-        """
-    tar = tarfile.open(mode="r|*", fileobj=input_file)
-
-    chunk_size = 100 * 1024
-
-    for member in tar:
-        if not member.isfile():
-            continue
-        f = tar.extractfile(member)
-        h = hashlib.new(hash)
-        data = f.read(chunk_size)
-        while data:
-            h.update(data)
-            data = f.read(chunk_size)
-        # output_file.write("%s  %s\n" % (h.hexdigest(), member.name))
-        print h.hexdigest()
-
-
-
-# if __name__ == "__main__":
-# from optparse import OptionParser
-#     import sys
-#     main()
-
-
-import hashlib
-
 
 def calculate_md5(file_path, block_size=2 ** 20):
     file_obj = open(file_path, 'rb')
@@ -81,9 +49,6 @@ def checksum_in_archive(input_file):
         files_md5_dict[member.path] = h.hexdigest()
     print "In TARSUM - printing the returned dict: " + str(files_md5_dict)
     return files_md5_dict
-
-
-import tarfile
 
 
 def checksum_archive(archive_path):
