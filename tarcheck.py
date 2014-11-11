@@ -66,7 +66,8 @@ def checksum_and_compare(archive_path, raw_dir_path):
             arch_file_md5 = calculate_md5(extr_file)
 
             # Checksum the raw file
-            with open(os.path.join(raw_dir_path, tar_info.path)) as raw_file:
+            tared_file_path = os.path.join(raw_dir_path, tar_info.path)
+            with open(tared_file_path) as raw_file:
                 raw_file_md5 = calculate_md5(raw_file)
 
 
@@ -74,7 +75,6 @@ def checksum_and_compare(archive_path, raw_dir_path):
             if raw_file_md5 != arch_file_md5:
                 print "ERROR -- md5s don't match! File="+tar_info.path+ " md5_raw_file="+raw_file_md5+" and md5_archived_file="+arch_file_md5
             tar.members = []
-
 
 
 def parse_args():
