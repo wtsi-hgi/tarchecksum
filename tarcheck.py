@@ -36,12 +36,9 @@ import hashlib
 
 def calculate_md5(file_obj, block_size=2 ** 20):
     """
-    :param file_obj: file
-        The file object to checksum
-    :param block_size: int
-        The size of the blocks to be read and checksumed
-    :return: checksum: string
-        The checksum as a string
+    :param file_obj: file - The file object to checksum
+    :param block_size: int - The size of the blocks to be read and checksumed
+    :return: checksum: string - The checksum as a string
     """
     md5 = hashlib.md5()
     while True:
@@ -55,10 +52,8 @@ def calculate_md5(file_obj, block_size=2 ** 20):
 
 def checksum_and_compare(archive_path, raw_dir_path):
     """
-    :param archive_path: str
-        The full path to the archive
-    :param raw_dir_path: str
-        The full path to the archived directory
+    :param archive_path: str - The full path to the archive
+    :param raw_dir_path: str - The full path to the archived directory
     :return: None
     """
     with tarfile.open(name=archive_path, mode="r|*") as tar:
