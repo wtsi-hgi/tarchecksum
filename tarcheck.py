@@ -26,7 +26,7 @@ __author__ = 'ic4'
 
 This module has been written for checksumming all the files in a tar archive and comparing
 the checksums against the ones of the original files. In case the md5 sums don't match,
-there will be an error message outputted. Otherwise if all goes well, there is no message.
+there will be an error message outputted.
 
 Example:
 
@@ -64,16 +64,14 @@ def calculate_md5(file_obj, block_size=2 ** 20):
 
 def checksum_and_compare(archive_path, raw_dir_path):
     """
-    :param archive_path: str - The full path to the archive
-    :param raw_dir_path: str - The full path to the archived directory
+    :param archive_path: str - The path to the archive
+    :param raw_dir_path: str - The path to the archived directory
     :return: None
     """
     if not archive_path:
         raise ValueError("Missing path to the tar archive to checksum.")
     if not os.path.isdir(raw_dir_path):
         raise ValueError("The directory path to the raw data doesn't point to a directory")
-    if not os.path.isabs(raw_dir_path):
-        raise ValueError("The directory path must be absolute")
 
     raw_dir_parent = os.path.abspath(os.path.join(raw_dir_path, os.pardir))
     with tarfile.open(name=archive_path, mode="r|*") as tar:
@@ -90,10 +88,11 @@ def checksum_and_compare(archive_path, raw_dir_path):
             with open(tared_file_path) as raw_file:
                 raw_file_md5 = calculate_md5(raw_file)
 
-
             # Compare md5s:
             if raw_file_md5 != arch_file_md5:
                 print "ERROR -- md5s don't match! File="+tar_info.path+ " md5_raw_file="+raw_file_md5+" and md5_archived_file="+arch_file_md5
+            else:
+                print "OK!"
             tar.members = []
 
 
@@ -112,10 +111,9 @@ def parse_args():
         return args
 
 
-# Get args from user:
-args = parse_args()
-
-checksum_and_compare(args.tar_path, args.dir)
+if __name__ == '__main__':
+    args = parse_args()
+    checksum_and_compare(args.tar_path, args.dir)
 
 
 
