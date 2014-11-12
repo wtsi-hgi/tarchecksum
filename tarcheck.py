@@ -27,11 +27,14 @@ __author__ = 'ic4'
 This module has been written for checksumming all the files in a tar archive and comparing
 the checksums against the ones of the original files. In case the md5 sums don't match,
 there will be an error message outputted.
+The checksum on the archive members is done by streaming from the tar the list of members and their metadata,
+and computing the md5 checksum on each member after extracting it.
 
 Example:
 
 $python tarcheck.py --tar_path /path/to/archive/archive.tar.bz2 --dir /path/to/the/archived/dir
 
+It uses < 100MB memory to run.
 
 """
 
@@ -78,14 +81,21 @@ def checksum_and_compare(archive_path, raw_dir_path):
         for tar_info in tar:
             if not tar_info.isfile():
                 continue
+
+            # Extracting each file:
             extr_file = tar.extractfile(tar_info)
+            if not extr_file:
+                continue
 
             # Checksum the tared up file:
             arch_file_md5 = calculate_md5(extr_file)
 
             # Checksum the raw file
-            tared_file_path = os.path.join(raw_dir_parent, tar_info.path)
-            with open(tared_file_path) as raw_file:
+            raw_file_path = os.path.join(raw_dir_parent, tar_info.path)
+            if not os.path.isfile(raw_file_path):
+                err_msg = "The directory given as input doesn't contain all the files in the archive: "+str(raw_file_path)
+                raise ValueError(err_msg)
+            with open(raw_file_path) as raw_file:
                 raw_file_md5 = calculate_md5(raw_file)
 
             # Compare md5s:
@@ -113,7 +123,10 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    checksum_and_compare(args.tar_path, args.dir)
+    try:
+        checksum_and_compare(args.tar_path, args.dir)
+    except ValueError as e:
+        print e.message
 
 
 
