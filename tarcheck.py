@@ -50,6 +50,8 @@ def calculate_md5(file_obj, block_size=2 ** 20):
     :param block_size: int - The size of the blocks to be read and checksumed
     :return: checksum: string - The checksum as a string
     """
+    if not file_obj:
+        raise ValueError("Missing file argument!")
     md5 = hashlib.md5()
     while True:
         data = file_obj.read(block_size)
@@ -66,6 +68,14 @@ def checksum_and_compare(archive_path, raw_dir_path):
     :param raw_dir_path: str - The full path to the archived directory
     :return: None
     """
+    if not archive_path:
+        raise ValueError("Missing path to the tar archive to checksum.")
+    if not os.path.isdir(raw_dir_path):
+        raise ValueError("The directory path to the raw data doesn't point to a directory")
+    if not os.path.isabs(raw_dir_path):
+        raise ValueError("The directory path must be absolute")
+
+    raw_dir_parent = os.path.abspath(os.path.join(raw_dir_path, os.pardir))
     with tarfile.open(name=archive_path, mode="r|*") as tar:
         for tar_info in tar:
             if not tar_info.isfile():
@@ -76,7 +86,7 @@ def checksum_and_compare(archive_path, raw_dir_path):
             arch_file_md5 = calculate_md5(extr_file)
 
             # Checksum the raw file
-            tared_file_path = os.path.join(raw_dir_path, tar_info.path)
+            tared_file_path = os.path.join(raw_dir_parent, tar_info.path)
             with open(tared_file_path) as raw_file:
                 raw_file_md5 = calculate_md5(raw_file)
 
