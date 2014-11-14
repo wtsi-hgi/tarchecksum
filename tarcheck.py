@@ -45,7 +45,6 @@ It uses < 100MB memory to run.
 """
 
 
-import hashlib
 import tarfile
 import os
 import argparse
@@ -82,6 +81,8 @@ def checksum_and_compare(archive_path, raw_dir_path):
     if not os.path.isdir(raw_dir_path):
         raise ValueError("The directory path to the raw data doesn't point to a directory")
 
+    total_files = 0
+    errors_list = []
     raw_dir_parent = os.path.abspath(os.path.join(raw_dir_path, os.pardir))
     with tarfile.open(name=archive_path, mode="r|*") as tar:
         for tar_info in tar:
@@ -106,10 +107,11 @@ def checksum_and_compare(archive_path, raw_dir_path):
 
             # Compare md5s:
             if raw_file_md5 != arch_file_md5:
-                print "ERROR -- md5s don't match! File="+tar_info.path+ " md5_raw_file="+raw_file_md5+" and md5_archived_file="+arch_file_md5
-            else:
-                print "OK!"
+                error = "ERROR file="+tar_info.path+ " "+raw_file_md5+" != "+arch_file_md5
+                errors_list.append(error)
             tar.members = []
+            total_files += 1
+    return (total_files, errors_list)
 
 
 def parse_args():
@@ -130,7 +132,13 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     try:
-        checksum_and_compare(args.tar_path, args.dir)
+        total_files, errors = checksum_and_compare(args.tar_path, args.dir)
+        print "Total files in the archive: "+str(total_files)
+        print "Number of files that differ between the archive and original: "+str(len(errors))
+        print "FILES different:"
+        if errors:
+            for err in errors:
+                print str(err)
     except ValueError as e:
         print e.message
 
