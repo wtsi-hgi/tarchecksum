@@ -1,4 +1,4 @@
-ChecksumTar
+tarchecksum
 ===========
 This module performs the checksums on all the files in a tar archive and compares them
 against the checksums of the original files. In case the md5 sums don't match,
