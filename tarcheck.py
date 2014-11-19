@@ -113,6 +113,23 @@ def checksum_and_compare(archive_path, raw_dir_path):
             total_files += 1
     return (total_files, errors_list)
 
+def memory_usage():
+    """Memory usage of the current process in kilobytes."""
+    status = None
+    result = {'peak': 0, 'rss': 0}
+    try:
+        # This will only work on systems with a /proc file system
+        # (like Linux).
+        status = open('/proc/self/status')
+        for line in status:
+            parts = line.split()
+            key = parts[0][2:-1].lower()
+            if key in result:
+                result[key] = int(parts[1])
+    finally:
+        if status is not None:
+            status.close()
+    return result
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -141,6 +158,10 @@ if __name__ == '__main__':
                 print str(err)
     except ValueError as e:
         print e.message
+    print memory_usage()
+    import resource
+    print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
 
 
 
