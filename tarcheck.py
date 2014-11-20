@@ -50,6 +50,7 @@ import os
 import argparse
 import sys
 import hashlib
+import psutil
 
 
 def calculate_md5(file_obj, block_size=2 ** 20):
@@ -70,23 +71,26 @@ def calculate_md5(file_obj, block_size=2 ** 20):
 
 
 
-def checksum_and_compare(archive_path, raw_dir_path):
+def checksum_and_compare(archive_path, dir_path):
     """
     :param archive_path: str - The path to the archive
-    :param raw_dir_path: str - The path to the archived directory
-    :return: None
+    :param dir_path: str - The path to the archived directory
+    :return: total_files, errors - The number of files found
+        in the archive and a list of files that differ from the raw version
     """
     if not archive_path:
         raise ValueError("Missing path to the tar archive to checksum.")
-    if not os.path.isdir(raw_dir_path):
+    if not os.path.isdir(dir_path):
         raise ValueError("The directory path to the raw data doesn't point to a directory")
 
     total_files = 0
-    errors_list = []
-    raw_dir_parent = os.path.abspath(os.path.join(raw_dir_path, os.pardir))
+    errors = []
+    raw_dir_parent = os.path.abspath(os.path.join(dir_path, os.pardir))
     with tarfile.open(name=archive_path, mode="r|*") as tar:
         for tar_info in tar:
-            if not tar_info.isfile():
+            if not tar_info.isfile() and not tar_info.issym():
+                print "This is not a file - skipping checksum for: "+str(tar_info.path)
+                print "Is symlink? "+str(tar_info.issym())
                 continue
 
             # Extracting each file:
@@ -107,11 +111,21 @@ def checksum_and_compare(archive_path, raw_dir_path):
 
             # Compare md5s:
             if raw_file_md5 != arch_file_md5:
-                error = "ERROR file="+tar_info.path+ " "+raw_file_md5+" != "+arch_file_md5
-                errors_list.append(error)
+                error = tar_info.path+ " "+raw_file_md5+" != "+arch_file_md5
+                errors.append(error)
             tar.members = []
             total_files += 1
-    return (total_files, errors_list)
+    print_memory_consumption()
+    return (total_files, errors)
+
+def print_memory_consumption():
+    print memory_usage()
+    import resource
+    print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+    p = psutil.Process(os.getpid())
+    print "Process status: "+str(p.memory_info())
+
 
 def memory_usage():
     """Memory usage of the current process in kilobytes."""
@@ -158,9 +172,7 @@ if __name__ == '__main__':
                 print str(err)
     except ValueError as e:
         print e.message
-    print memory_usage()
-    import resource
-    print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
 
 
 
