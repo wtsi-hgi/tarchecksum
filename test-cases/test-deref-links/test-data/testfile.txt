@@ -1,0 +1,1 @@
+This is a test case for a tar including symlinks and hardlinks dereferenced at tar creation time.
