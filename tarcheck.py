@@ -88,9 +88,11 @@ def checksum_and_compare(archive_path, dir_path):
     raw_dir_parent = os.path.abspath(os.path.join(dir_path, os.pardir))
     with tarfile.open(name=archive_path, mode="r|*") as tar:
         for tar_info in tar:
-            if not tar_info.isfile() and not tar_info.issym():
+            if not tar_info.isfile():
                 print "This is not a file - skipping checksum for: "+str(tar_info.path)
-                print "Is symlink? "+str(tar_info.issym())
+                continue
+            if tar_info.issym():
+                print "WARNING - This archive contains symlinks that aren't dereferenced!"+str(tar_info.path)
                 continue
 
             # Extracting each file:
