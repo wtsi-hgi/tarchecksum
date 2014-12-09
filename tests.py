@@ -71,5 +71,20 @@ class CompareLargeFilesTestCase(unittest.TestCase):
         self.assertEqual(len(errors), 0)
 
 
+class DirContentsArchivedWithoutParentDir(unittest.TestCase):
+
+    def test_checksum_and_compare(self):
+        """
+        This test case compares the contents of an archive with the contents of a directory,
+        without having the actual directory name in the relative paths of the files in the archive.
+        """
+        archive_path = 'test-cases/test-only-contents-archived/test-data.tar.bz2'
+        dir_path = 'test-cases/test-only-contents-archived/test-data'
+        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        self.assertEqual(total_files, 4)
+        self.assertEqual(len(errors), 0)
+
+
+
 if __name__ == '__main__':
     unittest.main()

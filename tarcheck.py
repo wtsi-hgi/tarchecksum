@@ -75,7 +75,7 @@ def checksum_and_compare(archive_path, dir_path):
     """
     :param archive_path: str - The path to the archive
     :param dir_path: str - The path to the archived directory
-    :return: total_files, errors - The number of files found
+    :return: total_files, errors: int, list - The number of files found, a list of errors found
         in the archive and a list of files that differ from the raw version
     """
     if not archive_path:
@@ -103,11 +103,15 @@ def checksum_and_compare(archive_path, dir_path):
             # Checksum the tared up file:
             arch_file_md5 = calculate_md5(extr_file)
 
+            # Trying to see if only the contents of the dir was archived or also the parent dir is in the archive:
+            raw_file_path = os.path.abspath(os.path.join(dir_path, tar_info.path))
+            if not os.path.exists(raw_file_path):
+                raw_file_path = os.path.abspath(os.path.join(raw_dir_parent, tar_info.path))
+                if not os.path.isfile(raw_file_path):
+                    err_msg = "The directory given as input doesn't contain all the files in the archive: "+str(raw_file_path)
+                    raise ValueError(err_msg)
+
             # Checksum the raw file
-            raw_file_path = os.path.join(raw_dir_parent, tar_info.path)
-            if not os.path.isfile(raw_file_path):
-                err_msg = "The directory given as input doesn't contain all the files in the archive: "+str(raw_file_path)
-                raise ValueError(err_msg)
             with open(raw_file_path) as raw_file:
                 raw_file_md5 = calculate_md5(raw_file)
 
@@ -119,6 +123,7 @@ def checksum_and_compare(archive_path, dir_path):
             total_files += 1
     print_memory_consumption()
     return (total_files, errors)
+
 
 def print_memory_consumption():
     print memory_usage()
