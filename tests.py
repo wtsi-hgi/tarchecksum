@@ -8,7 +8,7 @@ class SameContentTestCase(unittest.TestCase):
     def test_checksum_and_compare(self):
         archive_path = 'test-cases/test-same-content/test-data.tar.bz2'
         dir_path = 'test-cases/test-same-content/test-data'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 5)
         self.assertEqual(len(errors), 0)
 
@@ -22,7 +22,7 @@ class DiffContentTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-diff-content/test-data.tar.bz2'
         dir_path = 'test-cases/test-diff-content/test-data'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 5)
         self.assertEqual(len(errors), 1)
 
@@ -38,7 +38,7 @@ class FileMissingFromDirTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-files-missing/test-data.tar.bz2'
         dir_path = 'test-cases/test-files-missing/test-data'
-        self.assertRaises(ValueError, tarcheck.checksum_and_compare, archive_path, dir_path)
+        self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
 
 
 class DereferencedSymlinksTestCase(unittest.TestCase):
@@ -51,7 +51,7 @@ class DereferencedSymlinksTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-deref-links/test-data.tar.bz2'
         dir_path = 'test-cases/test-deref-links/test-data'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 3)
         self.assertEqual(len(errors), 0)
 
@@ -66,7 +66,7 @@ class CompareLargeFilesTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-largebams/exp.tar.bz2'
         dir_path = 'test-cases/test-largebams/exp'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 1)
         self.assertEqual(len(errors), 0)
 
@@ -80,7 +80,7 @@ class DirContentsArchivedWithoutParentDir(unittest.TestCase):
         """
         archive_path = 'test-cases/test-only-contents-archived/test-data.tar.bz2'
         dir_path = 'test-cases/test-only-contents-archived/test-data'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 4)
         self.assertEqual(len(errors), 0)
 

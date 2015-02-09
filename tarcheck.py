@@ -71,7 +71,7 @@ def calculate_md5(file_obj, block_size=2 ** 20):
 
 
 
-def checksum_and_compare(archive_path, dir_path):
+def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path):
     """
     :param archive_path: str - The path to the archive
     :param dir_path: str - The path to the archived directory
@@ -95,13 +95,13 @@ def checksum_and_compare(archive_path, dir_path):
                 print "WARNING - This archive contains symlinks that aren't dereferenced!"+str(tar_info.path)
                 continue
 
-            # Extracting each file:
-            extr_file = tar.extractfile(tar_info)
-            if not extr_file:
+            # Pretending to extract each file - getting back a handle, but the file isn't actually extracted:
+            archived_file_handle = tar.extractfile(tar_info)
+            if not archived_file_handle:
                 continue
 
             # Checksum the tared up file:
-            arch_file_md5 = calculate_md5(extr_file)
+            archived_file_md5 = calculate_md5(archived_file_handle)
 
             # Trying to see if only the contents of the dir was archived or also the parent dir is in the archive:
             raw_file_path = os.path.abspath(os.path.join(dir_path, tar_info.path))
@@ -116,13 +116,33 @@ def checksum_and_compare(archive_path, dir_path):
                 raw_file_md5 = calculate_md5(raw_file)
 
             # Compare md5s:
-            if raw_file_md5 != arch_file_md5:
-                error = tar_info.path+ " "+raw_file_md5+" != "+arch_file_md5
+            if raw_file_md5 != archived_file_md5:
+                error = tar_info.path+ " "+raw_file_md5+" != "+archived_file_md5
                 errors.append(error)
             tar.members = []
             total_files += 1
     print_memory_consumption()
     return (total_files, errors)
+
+
+def get_all_files_in_dir_recursively(dir_path):
+    files_list = []
+    for (dir_name, _, files) in os.walk(dir_path):
+        for f in files:
+            path = os.path.join(dir, f)
+            files_list.append(path)
+
+
+for (dir_name, _, files) in os.walk('/home/ic4/Downloads/'):
+    for f in files:
+        path =
+        #path = os.path.join(dir, f)
+        #files_list.append(path)
+
+def check_all_files_in_directory_were_archived(archive_path, dir_path):
+    pass
+
+
 
 
 def print_memory_consumption():
@@ -170,7 +190,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     try:
-        total_files, errors = checksum_and_compare(args.tar_path, args.dir)
+        total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(args.tar_path, args.dir)
         print "Total files in the archive: "+str(total_files)
         print "Number of files that differ between the archive and original: "+str(len(errors))
         print "FILES different:"
@@ -179,9 +199,5 @@ if __name__ == '__main__':
                 print str(err)
     except ValueError as e:
         print e.message
-
-
-
-
 
 
