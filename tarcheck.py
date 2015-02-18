@@ -129,7 +129,6 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
     return (total_files, errors)
 
 
-
 def print_memory_consumption():
     print memory_usage()
     import resource

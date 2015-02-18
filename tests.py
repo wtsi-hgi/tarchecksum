@@ -85,6 +85,13 @@ class DirContentsArchivedWithoutParentDir(unittest.TestCase):
         self.assertEqual(len(errors), 0)
 
 
+class DirContentPermissionDenied(unittest.TestCase):
+
+    def test_checksum_and_compare(self):
+        archive_path = 'test-cases/test-no-permission/test-data.tar.bz2'
+        dir_path = 'test-cases/test-no-permission/test-data'
+        self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
+
 
 if __name__ == '__main__':
     unittest.main()
