@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from apport.hookutils import root_command_output
 
 __author__ = 'ic4'
 
@@ -107,8 +108,11 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
             raw_file_path = os.path.abspath(os.path.join(dir_path, tar_info.path))
             if not os.path.exists(raw_file_path):
                 raw_file_path = os.path.abspath(os.path.join(raw_dir_parent, tar_info.path))
+                if not os.access(raw_file_path, os.R_OK):
+                    err_msg = "ERROR: This user can't access all the files in this directory: "+str(raw_file_path)
+                    raise ValueError(err_msg)
                 if not os.path.isfile(raw_file_path):
-                    err_msg = "The directory given as input doesn't contain all the files in the archive: "+str(raw_file_path)
+                    err_msg = "ERROR: The directory given as input doesn't contain all the files in the archive: "+str(raw_file_path)
                     raise ValueError(err_msg)
 
             # Checksum the raw file
@@ -121,27 +125,8 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
                 errors.append(error)
             tar.members = []
             total_files += 1
-    print_memory_consumption()
+    #print_memory_consumption()
     return (total_files, errors)
-
-
-def get_all_files_in_dir_recursively(dir_path):
-    files_list = []
-    for (dir_name, _, files) in os.walk(dir_path):
-        for f in files:
-            path = os.path.join(dir, f)
-            files_list.append(path)
-
-
-for (dir_name, _, files) in os.walk('/home/ic4/Downloads/'):
-    for f in files:
-        path =
-        #path = os.path.join(dir, f)
-        #files_list.append(path)
-
-def check_all_files_in_directory_were_archived(archive_path, dir_path):
-    pass
-
 
 
 
@@ -193,8 +178,8 @@ if __name__ == '__main__':
         total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(args.tar_path, args.dir)
         print "Total files in the archive: "+str(total_files)
         print "Number of files that differ between the archive and original: "+str(len(errors))
-        print "FILES different:"
         if errors:
+            print "FILES different:"
             for err in errors:
                 print str(err)
     except ValueError as e:
