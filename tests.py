@@ -94,19 +94,6 @@ class DirContentPermissionDenied(unittest.TestCase):
 
 
 
-# def is_excluded(string, wildcard=None, regex=None):
-#     if not wildcard and not regex:
-#         raise ValueError("No wildcard or regex provided => nothing to test")
-#     if wildcard:
-#         return fnmatch.fnmatch(string, wildcard)
-#     if regex:
-#         pattern = re.compile(regex)
-#         if pattern.match(string) is not None:
-#             return True
-#         return False
-#
-
-
 class TestExcludeFiles(unittest.TestCase):
 
     def test_is_excluded1(self):
@@ -125,7 +112,12 @@ class TestExcludeFiles(unittest.TestCase):
         self.assertTrue(tarcheck.is_excluded('sepi.bam', regex=regex))
 
 
-
+    def test_checksum_and_compare(self):
+        archive_path = 'test-cases/test-excluded/test-data.tar.bz2'
+        dir_path = 'test-cases/test-excluded/test-data2'
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path, exclude_wildcard='*.snap')
+        #self.assertEqual(total_files, 4)
+        self.assertEqual(len(errors), 0)
 
 
 
