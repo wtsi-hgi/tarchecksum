@@ -129,6 +129,76 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
     return (total_files, errors)
 
 
+
+
+def get_all_files_in_dir_recursively(dir_path):
+    print "DIR PATH: "+str(dir_path)
+    files_list = []
+    for dir_, _, files in os.walk(dir_path):
+        for fname in files:
+            #rel_dir = os.path.relpath(dir_, dir_path)
+            print "var dir_ = "+str(dir_)
+            rel_dir = os.path.relpath(dir_, dir_path)
+            print "REL_dir = "+rel_dir
+            rel_file = os.path.join(rel_dir, fname)
+            print "REL_FILE = "+str(rel_file)
+            files_list.append(rel_file)
+            print "IN dir: "+rel_file
+    return files_list
+
+
+def get_all_files_in_archive(archive_path):
+    tar = tarfile.open(archive_path)
+    files = [f.path for f in tar.getmembers()]
+    for f in files:
+        parent_dir = os.path.abspath(os.path.join(archive_path, os.pardir))
+        rel_dir = os.path.relpath(archive_path, parent_dir)
+        rel_file = os.path.join(rel_dir, f)
+        print "in archive: "+rel_file
+    return files
+
+
+def check_all_files_in_directory_were_archived(archive_path, dir_path):
+    files_from_dir = get_all_files_in_dir_recursively(dir_path)
+    files_from_archive = get_all_files_in_archive(archive_path)
+
+    archive_file = open('/home/ic4/Downloads/archive.out', 'w')
+    for f in files_from_archive:
+        archive_file.write(f+'\n')
+
+    dir_files = open('/home/ic4/Downloads/dir.out', 'w')
+    for f in files_from_dir:
+        dir_files.write(f+'\n')
+
+check_all_files_in_directory_were_archived('/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data.tar.bz2',
+                                           '/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data/')
+
+
+
+
+
+# def get_all_files_in_dir_recursively(dir_path):
+#     files_list = []
+#     for (dir_name, _, files) in os.walk(dir_path):
+#         for f in files:
+#             path = os.path.join(dir, f)
+#             files_list.append(path)
+
+
+# for root, dirs, files in os.walk('/home/ic4/Downloads/'):
+#     print "ROOT: " + str(root)
+#     print "DIRS: " + str(dirs)
+#     print "FILES: " + str(files)
+#
+# for (dir_name, _, files) in os.walk('/home/ic4/Downloads/'):
+#     for f in files:
+#         print os.path.join(dir_name, f)
+#         # path = os.path.join(dir_name, f)
+#         # print path
+#         #path = os.path.join(dir, f)
+#         #files_list.append(path)
+
+
 def print_memory_consumption():
     print memory_usage()
     import resource
