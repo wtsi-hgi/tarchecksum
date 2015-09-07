@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from apport.hookutils import root_command_output
+#from apport.hookutils import root_command_output
 
 __author__ = 'ic4'
 
