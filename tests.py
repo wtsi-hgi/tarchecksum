@@ -93,5 +93,42 @@ class DirContentPermissionDenied(unittest.TestCase):
         self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
 
 
+
+# def is_excluded(string, wildcard=None, regex=None):
+#     if not wildcard and not regex:
+#         raise ValueError("No wildcard or regex provided => nothing to test")
+#     if wildcard:
+#         return fnmatch.fnmatch(string, wildcard)
+#     if regex:
+#         pattern = re.compile(regex)
+#         if pattern.match(string) is not None:
+#             return True
+#         return False
+#
+
+
+class TestExcludeFiles(unittest.TestCase):
+
+    def test_is_excluded1(self):
+        wildcard = '*.jpg'
+        self.assertTrue(tarcheck.is_excluded('photo.jpg', wildcard=wildcard))
+        self.assertFalse(tarcheck.is_excluded('photo.txt', wildcard=wildcard))
+
+    def test_is_excluded2(self):
+        wildcard = '.snapshot'
+        self.assertTrue(tarcheck.is_excluded('.snapshot', wildcard=wildcard))
+
+    def test_is_excluded3(self):
+        regex = 'sepi.[cr|b]am'
+        self.assertFalse(tarcheck.is_excluded('.snapshot', regex=regex))
+        self.assertFalse(tarcheck.is_excluded('*.sepi.cram', regex=regex))
+        self.assertTrue(tarcheck.is_excluded('sepi.bam', regex=regex))
+
+
+
+
+
+
+
 if __name__ == '__main__':
     unittest.main()

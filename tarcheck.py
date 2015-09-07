@@ -52,6 +52,8 @@ import argparse
 import sys
 import hashlib
 import psutil
+import fnmatch
+import re
 
 
 def calculate_md5(file_obj, block_size=2 ** 20):
@@ -71,8 +73,20 @@ def calculate_md5(file_obj, block_size=2 ** 20):
     return md5.hexdigest()
 
 
+def is_excluded(string, wildcard=None, regex=None):
+    if not wildcard and not regex:
+        raise ValueError("No wildcard or regex provided => nothing to test")
+    if wildcard:
+        return fnmatch.fnmatch(string, wildcard)
+    if regex:
+        pattern = re.compile(regex)
+        if pattern.match(string) is not None:
+            return True
+        return False
 
-def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path):
+
+
+def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path, exclude_wildcard=None, exclude_regex=None):
     """
     :param archive_path: str - The path to the archive
     :param dir_path: str - The path to the archived directory
@@ -95,6 +109,12 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
             if tar_info.issym():
                 print "WARNING - This archive contains symlinks that aren't dereferenced!"+str(tar_info.path)
                 continue
+
+            # Exclude members
+            if exclude_regex or exclude_wildcard:
+                if is_excluded(tar_info.name, exclude_wildcard, exclude_regex):
+                    continue
+
 
             # Pretending to extract each file - getting back a handle, but the file isn't actually extracted:
             archived_file_handle = tar.extractfile(tar_info)
@@ -230,6 +250,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--tar_path', required=True, help='Path to the tar archive')
     parser.add_argument('--dir', required=True, help='Path to the directory that has been archived')
+    parser.add_argument('--exclude', required=False, help='A shell wildcard telling which files to exclude by name')
+    parser.add_argument('--exclude_regex', required=False, help='A regex telling which files to exclude by name')
+
 
     try:
         args = parser.parse_args()
@@ -244,7 +267,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     try:
-        total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(args.tar_path, args.dir)
+        total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(args.tar_path, args.dir, args.exclude, args.exclude_regex)
         print "Total files in the archive: "+str(total_files)
         print "Number of files that differ between the archive and original: "+str(len(errors))
         if errors:
