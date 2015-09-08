@@ -190,8 +190,8 @@ def check_all_files_in_directory_were_archived(archive_path, dir_path):
     for f in files_from_dir:
         dir_files.write(f+'\n')
 
-check_all_files_in_directory_were_archived('/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data.tar.bz2',
-                                           '/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data/')
+# check_all_files_in_directory_were_archived('/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data.tar.bz2',
+#                                            '/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data/')
 
 
 

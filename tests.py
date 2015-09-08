@@ -41,6 +41,7 @@ class FileMissingFromDirTestCase(unittest.TestCase):
         self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
 
 
+
 class DereferencedSymlinksTestCase(unittest.TestCase):
     def test_checksum_and_compare(self):
         """
