@@ -147,32 +147,33 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
 
 
 def get_all_files_in_dir_recursively(dir_path):
-    '''
+    """
     Returns a list of all files (including folders) in a given directory.
     :param dir_path: the directory for which files are to be found
     :return: a list of the paths for all files in directory, where paths are relative to dir_path
-    '''
-    print "DIR PATH: "+str(dir_path)
-    files_list = []
-    for dir_, _, files in os.walk(dir_path):
-        for fname in files:
-            #rel_dir = os.path.relpath(dir_, dir_path)
-            print "var dir_ = "+str(dir_)
-            rel_dir = os.path.relpath(dir_, dir_path)
-            print "REL_dir = "+rel_dir
-            rel_file = os.path.join(rel_dir, fname)
-            print "REL_FILE = "+str(rel_file)
-            files_list.append(rel_file)
-            print "IN dir: "+rel_file
-    return files_list
+    """
+    relative_file_paths = []
+
+    for root, directories, files in os.walk(dir_path):
+        relative_directory = root.replace(dir_path, "")
+        relative_directory = relative_directory.lstrip(os.sep)
+
+        if root != dir_path:
+            relative_file_paths.append(relative_directory)
+
+        for file_name in files:
+            relative_file_path = os.path.join(relative_directory, file_name)
+            relative_file_paths.append(relative_file_path)
+
+    return relative_file_paths
 
 
 def get_all_files_in_archive(archive_path):
-    '''
+    """
     Returns a list of all files (including folders) in a given archive.
     :param archive_path: the path to the archive in which files are to be found
     :return: a list of the paths for all files in the archive, where paths are relative to the root of the archive
-    '''
+    """
     tar = tarfile.open(archive_path)
     files = [f.path for f in tar.getmembers()]
     for f in files:
@@ -184,12 +185,12 @@ def get_all_files_in_archive(archive_path):
 
 
 def get_files_in_directory_not_in_archive(dir_path, archive_path):
-    '''
+    """
     Gets a list of what files in a give directory are not in a given archive.
     :param dir_path: the directory for which files are to be found and compared to those in the archive
     :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
     :return: a list of files that are in the given directory but not in the given archive. Empty list if no difference
-    '''
+    """
     files_in_dir = get_all_files_in_dir_recursively(dir_path)
     files_in_archive = get_all_files_in_archive(archive_path)
     return [x for x in files_in_dir if x not in files_in_archive]

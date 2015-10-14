@@ -138,9 +138,10 @@ class TestGetAllFilesInDirRecursively(unittest.TestCase):
         self.__expect_files_in_directory(['1', 'a', 'b', 'a/2', 'a/3', 'b/4', 'a/c', 'a/c/5'], 'hierarchical')
 
     def __expect_files_in_directory(self, expected_files, directory_name):
-        test_directory = os.path.join(TEST_FILES_BASE_PATH, 'test_get_all_files_in_dir_recursively', directory_name)
+        test_directory = os.path.join(TEST_FILES_BASE_PATH, 'test-get-all-files-in-dir-recursively', directory_name)
         files_list = tarcheck.get_all_files_in_dir_recursively(test_directory)
-        self.assertEquals(len(files_list), len(expected_files))
+        print files_list
+        print expected_files
         self.assertItemsEqual(files_list, expected_files)
 
 
@@ -160,7 +161,6 @@ class TestGetAllFilesInArchive(unittest.TestCase):
     def __expect_files_in_archive(self, expected_files, archive_name):
         test_archive = os.path.join(TEST_FILES_BASE_PATH, 'test-get-all-files-in-archive', archive_name)
         files_list = tarcheck.get_all_files_in_archive(test_archive)
-        self.assertEquals(len(files_list), len(expected_files))
         self.assertItemsEqual(files_list, expected_files)
 
 
@@ -195,7 +195,6 @@ class TestGetFilesInDirectoryNotInArchive(unittest.TestCase):
         test_archive = os.path.join(TEST_FILES_BASE_PATH, test_folder, archive_name)
         difference = tarcheck.get_files_in_directory_not_in_archive(test_directory, test_archive)
         self.assertItemsEqual(difference, expected_difference)
-
 
 
 if __name__ == '__main__':
