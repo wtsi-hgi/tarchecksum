@@ -146,9 +146,12 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
     return (total_files, errors)
 
 
-
-
 def get_all_files_in_dir_recursively(dir_path):
+    '''
+    Returns a list of all files (including folders) in a given directory.
+    :param dir_path: the directory for which files are to be found
+    :return: a list of the paths for all files in directory, where paths are relative to dir_path
+    '''
     print "DIR PATH: "+str(dir_path)
     files_list = []
     for dir_, _, files in os.walk(dir_path):
@@ -165,6 +168,11 @@ def get_all_files_in_dir_recursively(dir_path):
 
 
 def get_all_files_in_archive(archive_path):
+    '''
+    Returns a list of all files (including folders) in a given archive.
+    :param archive_path: the path to the archive in which files are to be found
+    :return: a list of the paths for all files in the archive, where paths are relative to the root of the archive
+    '''
     tar = tarfile.open(archive_path)
     files = [f.path for f in tar.getmembers()]
     for f in files:
@@ -175,22 +183,16 @@ def get_all_files_in_archive(archive_path):
     return files
 
 
-def check_all_files_in_directory_were_archived(archive_path, dir_path):
-    files_from_dir = get_all_files_in_dir_recursively(dir_path)
-    files_from_archive = get_all_files_in_archive(archive_path)
-
-    archive_file = open('/home/ic4/Downloads/archive.out', 'w')
-    for f in files_from_archive:
-        archive_file.write(f+'\n')
-
-    dir_files = open('/home/ic4/Downloads/dir.out', 'w')
-    for f in files_from_dir:
-        dir_files.write(f+'\n')
-
-# check_all_files_in_directory_were_archived('/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data.tar.bz2',
-#                                            '/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data/')
-
-
+def get_files_in_directory_not_in_archive(dir_path, archive_path):
+    '''
+    Gets a list of what files in a give directory are not in a given archive.
+    :param dir_path: the directory for which files are to be found and compared to those in the archive
+    :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
+    :return: a list of files that are in the given directory but not in the given archive. Empty list if no difference
+    '''
+    files_in_dir = get_all_files_in_dir_recursively(dir_path)
+    files_in_archive = get_all_files_in_archive(archive_path)
+    return [x for x in files_in_dir if x not in files_in_archive]
 
 
 
