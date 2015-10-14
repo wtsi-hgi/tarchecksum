@@ -125,6 +125,9 @@ class TestExcludeFiles(unittest.TestCase):
 
 
 class TestGetAllFilesInDirRecursively(unittest.TestCase):
+    '''
+    Unit tests for `tarcheck.get_all_files_in_dir_recursively`.
+    '''
     def test_with_empty_directory(self):
         self.__expect_files_in_folder(['1', '2', '3', '4', '5'], 'empty')
 
@@ -140,6 +143,25 @@ class TestGetAllFilesInDirRecursively(unittest.TestCase):
         self.assertEquals(len(files_list), len(expected_files))
         self.assertItemsEqual(files_list, expected_files)
 
+
+class TestGetAllFilesInArchive(unittest.TestCase):
+    '''
+    Unit tests for `tarcheck.get_all_files_in_archive`.
+    '''
+    def test_with_empty_archive(self):
+        self.__expect_files_in_archive(['1', '2', '3', '4', '5'], 'empty.tar.bz2')
+
+    def test_with_flat_archive_directory(self):
+        self.__expect_files_in_archive(['1', '2', '3'], 'flat.tar.bz2')
+
+    def test_with_hierarchical_archive_directory(self):
+        self.__expect_files_in_archive(['1', '2', '3', '4', '5'], 'hierarchical.tar.bz2')
+
+    def __expect_files_in_archive(self, expected_files, folder_name):
+        test_directory = os.path.join(TEST_FILES_BASE_PATH, 'test-get-all-files-in-archive', folder_name)
+        files_list = tarcheck.get_all_files_in_archive(test_directory)
+        self.assertEquals(len(files_list), len(expected_files))
+        self.assertItemsEqual(files_list, expected_files)
 
 
 if __name__ == '__main__':
