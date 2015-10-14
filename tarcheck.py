@@ -51,7 +51,6 @@ import os
 import argparse
 import sys
 import hashlib
-import psutil
 import fnmatch
 import re
 
@@ -145,7 +144,6 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
                 errors.append(error)
             tar.members = []
             total_files += 1
-    #print_memory_consumption()
     return (total_files, errors)
 
 
@@ -217,15 +215,6 @@ def check_all_files_in_directory_were_archived(archive_path, dir_path):
 #         # print path
 #         #path = os.path.join(dir, f)
 #         #files_list.append(path)
-
-
-def print_memory_consumption():
-    print memory_usage()
-    import resource
-    print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-
-    p = psutil.Process(os.getpid())
-    print "Process status: "+str(p.memory_info())
 
 
 def memory_usage():
