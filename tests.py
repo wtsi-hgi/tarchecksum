@@ -2,6 +2,9 @@ __author__ = 'ic4'
 
 import unittest
 import tarcheck
+import os
+
+TEST_FILES_BASE_PATH = 'test-cases'
 
 
 class SameContentTestCase(unittest.TestCase):
@@ -120,6 +123,22 @@ class TestExcludeFiles(unittest.TestCase):
         #self.assertEqual(total_files, 4)
         self.assertEqual(len(errors), 0)
 
+
+class TestGetAllFilesInDirRecursively(unittest.TestCase):
+    def test_with_empty_directory(self):
+        self.__expect_files_in_folder(['1', '2', '3', '4', '5'], 'empty')
+
+    def test_with_flat_directory(self):
+        self.__expect_files_in_folder(['1', '2', '3'], 'flat')
+
+    def test_with_hierarchical_directory(self):
+        self.__expect_files_in_folder(['1', '2', '3', '4', '5'], 'hierarchical')
+
+    def __expect_files_in_folder(self, expected_files, folder_name):
+        test_directory = os.path.join(TEST_FILES_BASE_PATH, 'test_get_all_files_in_dir_recursively', folder_name)
+        files_list = tarcheck.get_all_files_in_dir_recursively(test_directory)
+        self.assertEquals(len(files_list), len(expected_files))
+        self.assertItemsEqual(files_list, expected_files)
 
 
 

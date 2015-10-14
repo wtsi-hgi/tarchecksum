@@ -84,7 +84,6 @@ def is_excluded(string, wildcard=None, regex=None):
         return False
 
 
-
 def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path, exclude_wildcard=None, exclude_regex=None):
     """
     :param archive_path: str - The path to the archive
@@ -100,6 +99,7 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
     total_files = 0
     errors = []
     raw_dir_parent = os.path.abspath(os.path.join(dir_path, os.pardir))
+
     with tarfile.open(name=archive_path, mode="r|*") as tar:
         for tar_info in tar:
             if not tar_info.isfile():
@@ -113,7 +113,6 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
             if exclude_regex or exclude_wildcard:
                 if is_excluded(tar_info.name, exclude_wildcard, exclude_regex):
                     continue
-
 
             # Pretending to extract each file - getting back a handle, but the file isn't actually extracted:
             archived_file_handle = tar.extractfile(tar_info)
