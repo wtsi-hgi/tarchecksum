@@ -146,19 +146,19 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
     return (total_files, errors)
 
 
-def get_all_files_in_dir_recursively(dir_path):
+def get_all_files_in_directory_recursively(directory_path):
     """
     Returns a list of all files (including folders) in a given directory.
-    :param dir_path: the directory for which files are to be found
+    :param directory_path: the directory for which files are to be found
     :return: a list of the paths for all files in directory, where paths are relative to dir_path
     """
     relative_file_paths = []
 
-    for root, directories, files in os.walk(dir_path):
-        relative_directory = root.replace(dir_path, "")
+    for root, directories, files in os.walk(directory_path):
+        relative_directory = root.replace(directory_path, "")
         relative_directory = relative_directory.lstrip(os.sep)
 
-        if root != dir_path:
+        if root != directory_path:
             relative_file_paths.append(relative_directory)
 
         for file_name in files:
@@ -179,21 +179,51 @@ def get_all_files_in_archive(archive_path):
     return files
 
 
-def get_files_in_directory_not_in_archive(dir_path, archive_path, archive_ignore_leading_directories=0):
+def get_files_in_directory_not_in_archive(directory_path, archive_path, ignore_leading_directories_in_archive=0):
     """
     Gets a list of what files in a give directory are not in a given archive.
     Note: only considers the relative file paths - does not match the content of files
-    :param dir_path: the directory for which files are to be found and compared to those in the archive
+    :param directory_path: the directory for which files are to be found and compared to those in the archive
     :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
-    :param archive_strip_components: ignores the leading n directories in the archive. Similar to --strip components
-                                     flag: http://www.gnu.org/software/tar/manual/html_section/tar_52.html#transform
+    :param ignore_leading_directories_in_archive: ignores the leading n directories in the archive. Similar to
+        --strip-components flag: http://www.gnu.org/software/tar/manual/html_section/tar_52.html#transform
     :return: a list of files that are in the given directory but not in the given archive. Empty list if no difference
     """
-    files_in_dir = get_all_files_in_dir_recursively(dir_path)
+    files_in_dir = get_all_files_in_directory_recursively(directory_path)
     files_in_archive = get_all_files_in_archive(archive_path)
     # Strips n leading directories from all paths in archive, where n=archive_strip_components
-    files_in_archive = [os.sep.join(x.split(os.sep)[archive_ignore_leading_directories:]) for x in files_in_archive]
+    files_in_archive = [os.sep.join(x.split(os.sep)[ignore_leading_directories_in_archive:]) for x in files_in_archive]
     return [x for x in files_in_dir if x not in files_in_archive]
+
+
+def check_all_files_in_directory_are_in_archive(
+        directory_path, archive_path, exclude_wildcard=None, exclude_regex=None):
+    """
+    Checks that all files within the given directory are within the given archive,
+    i.e. `files(directory_path) is_subset? files(archive_path)`. Does not check the contents of the files.
+    :param directory_path: the directory for which files are to be found and compared to those in the archive
+    :param archive_path: the archive for which files are to be found and compared to those in the directory
+    :param exclude_wildcard: optional wildcard to exclude certain files or folders
+    :param exclude_regex: optional regex to exclude certain files or folders
+    :return: whether all the files in the directory are in the archive
+    """
+    archive_ignore_leading_directories = 0
+
+    while archive_ignore_leading_directories <= 1:
+        missing_files = get_files_in_directory_not_in_archive(
+            directory_path, archive_path, archive_ignore_leading_directories)
+
+        if exclude_regex or exclude_wildcard:
+            missing_files = [x for x in missing_files if not is_excluded(x, exclude_wildcard, exclude_regex)]
+
+        if len(missing_files) == 0:
+            # All files in directory (minus excluded) were in archive
+            return True
+        else:
+            # Maybe the tar file has more leading directories? i.e. everything parent/file, parent/folder/file
+            archive_ignore_leading_directories += 1
+
+    return False
 
 
 def memory_usage():
@@ -214,13 +244,13 @@ def memory_usage():
             status.close()
     return result
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--tar_path', required=True, help='Path to the tar archive')
     parser.add_argument('--dir', required=True, help='Path to the directory that has been archived')
     parser.add_argument('--exclude', required=False, help='A shell wildcard telling which files to exclude by name')
     parser.add_argument('--exclude_regex', required=False, help='A regex telling which files to exclude by name')
-
 
     try:
         args = parser.parse_args()
@@ -244,5 +274,3 @@ if __name__ == '__main__':
                 print str(err)
     except ValueError as e:
         print e.message
-
-
