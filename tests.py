@@ -3,6 +3,8 @@ __author__ = 'ic4'
 import unittest
 import tarcheck
 import os
+import logging
+import io
 
 TEST_FILES_BASE_PATH = 'test-cases'
 
@@ -42,7 +44,6 @@ class FileMissingFromDirTestCase(unittest.TestCase):
         archive_path = 'test-cases/test-files-missing/test-data.tar.bz2'
         dir_path = 'test-cases/test-files-missing/test-data'
         self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
-
 
 
 class DereferencedSymlinksTestCase(unittest.TestCase):
@@ -95,7 +96,6 @@ class DirContentPermissionDenied(unittest.TestCase):
         archive_path = 'test-cases/test-no-permission/test-data.tar.bz2'
         dir_path = 'test-cases/test-no-permission/test-data'
         self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
-
 
 
 class TestExcludeFiles(unittest.TestCase):
@@ -249,6 +249,30 @@ class TestCheckAllFilesInDirectoryAreInArchive(unittest.TestCase):
         check_result = tarcheck.check_all_files_in_directory_are_in_archive(
             test_directory, test_archive, exclude_wildcard, exclude_regex)
         self.assertEquals(check_result, expected)
+
+
+class TestSetUserDefinedLoggingLevel(unittest.TestCase):
+    """
+    Unit tests for `tarcheck.set_user_defined_logging_level`.
+    """
+    def test_set_debug_level_logging_using_upper_case_string(self):
+        tarcheck.set_user_defined_logging_level("DEBUG")
+        self.assertTrue(logging.root.isEnabledFor(logging.DEBUG))
+
+    def test_set_info_level_logging_using_upper_case_string(self):
+        tarcheck.set_user_defined_logging_level("INFO")
+        self.assertTrue(logging.root.isEnabledFor(logging.INFO))
+
+    def test_set_warning_level_logging_using_upper_case_string(self):
+        tarcheck.set_user_defined_logging_level("WARNING")
+        self.assertTrue(logging.root.isEnabledFor(logging.WARNING))
+
+    def test_set_level_with_lower_case_string(self):
+        tarcheck.set_user_defined_logging_level("info")
+        self.assertTrue(logging.root.isEnabledFor(logging.INFO))
+
+    def test_fail_set_level_with_invalid_string(self):
+        self.assertRaises(ValueError, tarcheck.set_user_defined_logging_level, "invalid")
 
 
 if __name__ == '__main__':
