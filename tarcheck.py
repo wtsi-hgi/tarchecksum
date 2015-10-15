@@ -175,18 +175,15 @@ def get_all_files_in_archive(archive_path):
     :return: a list of the paths for all files in the archive, where paths are relative to the root of the archive
     """
     tar = tarfile.open(archive_path)
-    files = [f.path for f in tar.getmembers()]
-    for f in files:
-        parent_dir = os.path.abspath(os.path.join(archive_path, os.pardir))
-        rel_dir = os.path.relpath(archive_path, parent_dir)
-        rel_file = os.path.join(rel_dir, f)
-        print "in archive: "+rel_file
+    files = [f.path.replace(archive_path, "") for f in tar.getmembers()]
+
     return files
 
 
 def get_files_in_directory_not_in_archive(dir_path, archive_path):
     """
     Gets a list of what files in a give directory are not in a given archive.
+    Note: only considers the relative file paths - does not match the content of files
     :param dir_path: the directory for which files are to be found and compared to those in the archive
     :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
     :return: a list of files that are in the given directory but not in the given archive. Empty list if no difference
@@ -194,29 +191,6 @@ def get_files_in_directory_not_in_archive(dir_path, archive_path):
     files_in_dir = get_all_files_in_dir_recursively(dir_path)
     files_in_archive = get_all_files_in_archive(archive_path)
     return [x for x in files_in_dir if x not in files_in_archive]
-
-
-
-# def get_all_files_in_dir_recursively(dir_path):
-#     files_list = []
-#     for (dir_name, _, files) in os.walk(dir_path):
-#         for f in files:
-#             path = os.path.join(dir, f)
-#             files_list.append(path)
-
-
-# for root, dirs, files in os.walk('/home/ic4/Downloads/'):
-#     print "ROOT: " + str(root)
-#     print "DIRS: " + str(dirs)
-#     print "FILES: " + str(files)
-#
-# for (dir_name, _, files) in os.walk('/home/ic4/Downloads/'):
-#     for f in files:
-#         print os.path.join(dir_name, f)
-#         # path = os.path.join(dir_name, f)
-#         # print path
-#         #path = os.path.join(dir, f)
-#         #files_list.append(path)
 
 
 def memory_usage():

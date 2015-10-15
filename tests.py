@@ -140,8 +140,6 @@ class TestGetAllFilesInDirRecursively(unittest.TestCase):
     def __expect_files_in_directory(self, expected_files, directory_name):
         test_directory = os.path.join(TEST_FILES_BASE_PATH, 'test-get-all-files-in-dir-recursively', directory_name)
         files_list = tarcheck.get_all_files_in_dir_recursively(test_directory)
-        print files_list
-        print expected_files
         self.assertItemsEqual(files_list, expected_files)
 
 
@@ -182,11 +180,11 @@ class TestGetFilesInDirectoryNotInArchive(unittest.TestCase):
 
     def test_with_flat_archive_directory_with_more_files_in_directory(self):
         self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
-            'hierarchical.tar.bz2', 'hierarchical', ['4', '5'])
+            'flat.tar.bz2', 'flat-with-more', ['4', '5'])
 
     def test_with_hierarchical_archive_directory_with_more_files_in_directory(self):
         self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
-            'hierarchical.tar.bz2', 'hierarchical', ['6', 'b/7', 'a/c/d', 'a/c/d/8'])
+            'hierarchical.tar.bz2', 'hierarchical-with-more', ['6', 'b/7', 'a/c/d', 'a/c/d/8'])
 
     def __expect_given_difference_between_files_in_directory_to_files_in_archive(
             self, archive_name, directory_name, expected_difference):
