@@ -16,6 +16,12 @@ where:
 It gives an error if there are files in the archive that can't be found in the directory
 given as input.
 
+Optional:
+* exclude - is a shell wildcard telling which files to exclude by name from the tar when checking
+* exclude_regex - a regex telling which files to exclude from the tar when checking
+
+Note: the tarcheck checks what is in the tar against the corresponding files in the dir. It does not check to see if everything in the dir has been archived. It only checksums the files in the tar and compares them with the checksums of the files in the dir given as argument.
+
 It uses < 100MB memory to run.
 
 

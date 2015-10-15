@@ -2,13 +2,16 @@ __author__ = 'ic4'
 
 import unittest
 import tarcheck
+import os
+
+TEST_FILES_BASE_PATH = 'test-cases'
 
 
 class SameContentTestCase(unittest.TestCase):
     def test_checksum_and_compare(self):
         archive_path = 'test-cases/test-same-content/test-data.tar.bz2'
         dir_path = 'test-cases/test-same-content/test-data'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 5)
         self.assertEqual(len(errors), 0)
 
@@ -22,7 +25,7 @@ class DiffContentTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-diff-content/test-data.tar.bz2'
         dir_path = 'test-cases/test-diff-content/test-data'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 5)
         self.assertEqual(len(errors), 1)
 
@@ -38,7 +41,8 @@ class FileMissingFromDirTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-files-missing/test-data.tar.bz2'
         dir_path = 'test-cases/test-files-missing/test-data'
-        self.assertRaises(ValueError, tarcheck.checksum_and_compare, archive_path, dir_path)
+        self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
+
 
 
 class DereferencedSymlinksTestCase(unittest.TestCase):
@@ -51,7 +55,7 @@ class DereferencedSymlinksTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-deref-links/test-data.tar.bz2'
         dir_path = 'test-cases/test-deref-links/test-data'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 3)
         self.assertEqual(len(errors), 0)
 
@@ -66,9 +70,185 @@ class CompareLargeFilesTestCase(unittest.TestCase):
         """
         archive_path = 'test-cases/test-largebams/exp.tar.bz2'
         dir_path = 'test-cases/test-largebams/exp'
-        total_files, errors = tarcheck.checksum_and_compare(archive_path, dir_path)
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
         self.assertEqual(total_files, 1)
         self.assertEqual(len(errors), 0)
+
+
+class DirContentsArchivedWithoutParentDir(unittest.TestCase):
+
+    def test_checksum_and_compare(self):
+        """
+        This test case compares the contents of an archive with the contents of a directory,
+        without having the actual directory name in the relative paths of the files in the archive.
+        """
+        archive_path = 'test-cases/test-only-contents-archived/test-data.tar.bz2'
+        dir_path = 'test-cases/test-only-contents-archived/test-data'
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path)
+        self.assertEqual(total_files, 4)
+        self.assertEqual(len(errors), 0)
+
+
+class DirContentPermissionDenied(unittest.TestCase):
+
+    def test_checksum_and_compare(self):
+        archive_path = 'test-cases/test-no-permission/test-data.tar.bz2'
+        dir_path = 'test-cases/test-no-permission/test-data'
+        self.assertRaises(ValueError, tarcheck.compare_checksum_of_all_archived_files_with_raw_files, archive_path, dir_path)
+
+
+
+class TestExcludeFiles(unittest.TestCase):
+
+    def test_is_excluded1(self):
+        wildcard = '*.jpg'
+        self.assertTrue(tarcheck.is_excluded('photo.jpg', wildcard=wildcard))
+        self.assertFalse(tarcheck.is_excluded('photo.txt', wildcard=wildcard))
+
+    def test_is_excluded2(self):
+        wildcard = '.snapshot'
+        self.assertTrue(tarcheck.is_excluded('.snapshot', wildcard=wildcard))
+
+    def test_is_excluded3(self):
+        regex = 'sepi.[cr|b]am'
+        self.assertFalse(tarcheck.is_excluded('.snapshot', regex=regex))
+        self.assertFalse(tarcheck.is_excluded('*.sepi.cram', regex=regex))
+        self.assertTrue(tarcheck.is_excluded('sepi.bam', regex=regex))
+
+    def test_checksum_and_compare(self):
+        archive_path = 'test-cases/test-excluded/test-data.tar.bz2'
+        dir_path = 'test-cases/test-excluded/test-data2'
+        total_files, errors = tarcheck.compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path, exclude_wildcard='*.snap')
+        #self.assertEqual(total_files, 4)
+        self.assertEqual(len(errors), 0)
+
+
+class TestGetAllFilesInDirectoryRecursively(unittest.TestCase):
+    """
+    Unit tests for `tarcheck.get_all_files_in_directory_recursively`.
+    """
+    def test_with_empty_directory(self):
+        self.__expect_files_in_directory([], 'empty')
+
+    def test_with_flat_directory(self):
+        self.__expect_files_in_directory(['1', '2', '3'], 'flat')
+
+    def test_with_hierarchical_directory(self):
+        self.__expect_files_in_directory(['1', 'a', 'b', 'a/2', 'a/3', 'b/4', 'a/c', 'a/c/5'], 'hierarchical')
+
+    def __expect_files_in_directory(self, expected_files, directory_name):
+        test_directory = os.path.join(TEST_FILES_BASE_PATH, 'test-get-all-files-in-directory-recursively', directory_name)
+        files_list = tarcheck.get_all_files_in_directory_recursively(test_directory)
+        self.assertItemsEqual(files_list, expected_files)
+
+
+class TestGetAllFilesInArchive(unittest.TestCase):
+    """
+    Unit tests for `tarcheck.get_all_files_in_archive`.
+    """
+    def test_with_empty_archive(self):
+        self.__expect_files_in_archive([], 'empty.tar.bz2')
+
+    def test_with_flat_archive_directory(self):
+        self.__expect_files_in_archive(['1', '2', '3'], 'flat.tar.bz2')
+
+    def test_with_hierarchical_archive_directory(self):
+        self.__expect_files_in_archive(['1', 'a', 'b', 'a/2', 'a/3', 'b/4', 'a/c', 'a/c/5'], 'hierarchical.tar.bz2')
+
+    def __expect_files_in_archive(self, expected_files, archive_name):
+        test_archive = os.path.join(TEST_FILES_BASE_PATH, 'test-get-all-files-in-archive', archive_name)
+        files_list = tarcheck.get_all_files_in_archive(test_archive)
+        self.assertItemsEqual(files_list, expected_files)
+
+
+class TestGetFilesInDirectoryNotInArchive(unittest.TestCase):
+    """
+    Unit tests for `tarcheck.get_files_in_directory_not_in_archive`.
+    """
+    def test_with_empty_archive_no_difference(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            [], 'empty.tar.bz2', 'empty')
+
+    def test_with_flat_archive_directory_no_difference(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            [], 'flat.tar.bz2', 'flat')
+
+    def test_with_hierarchical_archive_directory_no_difference(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            [], 'hierarchical.tar.bz2', 'hierarchical')
+
+    def test_with_flat_archive_directory_with_more_files_in_directory(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            ['4', '5'], 'flat.tar.bz2', 'flat-with-more')
+
+    def test_with_hierarchical_archive_directory_with_more_files_in_directory(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            ['6', 'b/7', 'a/c/d', 'a/c/d/8'], 'hierarchical.tar.bz2', 'hierarchical-with-more')
+
+    def test_with_flat_archive_directory_with_1_parent_component_directory(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            [], 'flat-with-parent-component.tar.bz2', 'flat', 1)
+
+    def test_with_flat_archive_directory_with_n_parent_component_directories(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            [],'flat-with-2-parent-components.tar.bz2', 'flat', 2)
+
+    def __expect_given_difference_between_files_in_directory_to_files_in_archive(
+            self, expected_difference, archive_name, directory_name, ignore_leading_directories_in_archive=0):
+        test_folder = 'test-get-files-in-directory-not-in-archive'
+        test_directory = os.path.join(TEST_FILES_BASE_PATH, test_folder, directory_name)
+        test_archive = os.path.join(TEST_FILES_BASE_PATH, test_folder, archive_name)
+        difference = tarcheck.get_files_in_directory_not_in_archive(
+            test_directory, test_archive, ignore_leading_directories_in_archive)
+        self.assertItemsEqual(difference, expected_difference)
+
+
+class TestCheckAllFilesInDirectoryAreInArchive(unittest.TestCase):
+    """
+    Unit tests for `tarcheck.check_all_files_in_directory_are_in_archive`.
+    """
+    def test_with_empty_archive_no_difference(self):
+        self.__expect_files_in_directory_in_archive(True, 'empty.tar.bz2', 'empty')
+
+    def test_with_flat_archive_directory_no_difference(self):
+        self.__expect_files_in_directory_in_archive(True, 'flat.tar.bz2', 'flat')
+
+    def test_with_hierarchical_archive_directory_no_difference(self):
+        self.__expect_files_in_directory_in_archive(True, 'hierarchical.tar.bz2', 'hierarchical')
+
+    def test_with_no_correlation_between_archive_and_directory(self):
+        self.__expect_files_in_directory_in_archive(False, 'hierarchical.tar.bz2', 'flat')
+
+    def test_with_flat_archive_directory_with_more_files_in_directory(self):
+        self.__expect_files_in_directory_in_archive(False, 'flat.tar.bz2', 'flat-with-more')
+
+    def test_with_hierarchical_archive_directory_with_more_files_in_directory(self):
+        self.__expect_files_in_directory_in_archive(False, 'hierarchical.tar.bz2', 'hierarchical-with-more')
+
+    def test_with_flat_archive_directory_with_1_parent_component_directory(self):
+        self.__expect_files_in_directory_in_archive(True, 'flat-with-parent-component.tar.bz2', 'flat')
+
+    def test_with_flat_archive_directory_with_n_parent_component_directories(self):
+        # Method should only check for single parent directory
+        self.__expect_files_in_directory_in_archive(False, 'flat-with-2-parent-components.tar.bz2', 'flat')
+
+    def test_with_exclude_all_regex(self):
+        self.__expect_files_in_directory_in_archive(True, 'empty.tar.bz2', 'hierarchical', exclude_regex=".*")
+
+    def test_with_exclude_all_more_files_regex(self):
+        self.__expect_files_in_directory_in_archive(True, 'flat.tar.bz2', 'flat-with-more', exclude_regex="4|5")
+
+    def test_with_exclude_not_all_more_files_wildcard(self):
+        self.__expect_files_in_directory_in_archive(False, 'flat.tar.bz2', 'flat-with-more', exclude_wildcard="4")
+
+    def __expect_files_in_directory_in_archive(
+            self, expected, archive_name, directory_name, exclude_wildcard=None, exclude_regex=None):
+        test_folder = 'test-get-files-in-directory-not-in-archive'
+        test_directory = os.path.join(TEST_FILES_BASE_PATH, test_folder, directory_name)
+        test_archive = os.path.join(TEST_FILES_BASE_PATH, test_folder, archive_name)
+        check_result = tarcheck.check_all_files_in_directory_are_in_archive(
+            test_directory, test_archive, exclude_wildcard, exclude_regex)
+        self.assertEquals(check_result, expected)
 
 
 if __name__ == '__main__':

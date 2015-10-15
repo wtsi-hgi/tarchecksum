@@ -1,1 +1,1 @@
-/home/ic4/pip.txt
+file_symlinked_to.txt
