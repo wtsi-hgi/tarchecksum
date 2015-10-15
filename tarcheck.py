@@ -53,6 +53,7 @@ import sys
 import hashlib
 import fnmatch
 import re
+import logging
 
 
 def calculate_md5(file_obj, block_size=2 ** 20):
@@ -103,10 +104,10 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
     with tarfile.open(name=archive_path, mode="r|*") as tar:
         for tar_info in tar:
             if not tar_info.isfile():
-                print "This is not a file - skipping checksum for: "+str(tar_info.path)
+                logging.info("This is not a file - skipping checksum for: %s" % tar_info.path)
                 continue
             if tar_info.issym():
-                print "WARNING - This archive contains symlinks that aren't dereferenced!"+str(tar_info.path)
+                logging.warning("This archive contains symlinks that aren't de-referenced: %s" % tar_info.path)
                 continue
 
             # Exclude members
@@ -251,6 +252,7 @@ def parse_args():
     parser.add_argument('--dir', required=True, help='Path to the directory that has been archived')
     parser.add_argument('--exclude', required=False, help='A shell wildcard telling which files to exclude by name')
     parser.add_argument('--exclude_regex', required=False, help='A regex telling which files to exclude by name')
+    parser.add_argument('--log', required=False, help='Logging level, see: https://docs.python.org/2/howto/logging.html')
 
     try:
         args = parser.parse_args()
@@ -262,8 +264,26 @@ def parse_args():
         return args
 
 
+def set_user_defined_logging_level(log_level):
+    """
+    Sets the logging level to that which the user defined in the given `log_level` argument
+    :param log_level: the log level that the user defined
+    """
+    numeric_level = getattr(logging, log_level.upper(), None)
+
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % log_level)
+
+    logging.root.setLevel(numeric_level)
+ #   logging.basicConfig(level=numeric_level)
+
+
 if __name__ == '__main__':
     args = parse_args()
+
+    if args.log:
+        set_user_defined_logging_level(args.log)
+
     try:
         total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(args.tar_path, args.dir, args.exclude, args.exclude_regex)
         print "Total files in the archive: "+str(total_files)
@@ -272,5 +292,6 @@ if __name__ == '__main__':
             print "FILES different:"
             for err in errors:
                 print str(err)
+
     except ValueError as e:
         print e.message
