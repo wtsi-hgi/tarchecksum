@@ -186,12 +186,21 @@ class TestGetFilesInDirectoryNotInArchive(unittest.TestCase):
         self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
             'hierarchical.tar.bz2', 'hierarchical-with-more', ['6', 'b/7', 'a/c/d', 'a/c/d/8'])
 
+    def test_with_flat_archive_directory_with_1_parent_component_directory(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            'flat-with-parent-component.tar.bz2', 'flat', [], 1)
+
+    def test_with_flat_archive_directory_with_n_parent_component_directories(self):
+        self.__expect_given_difference_between_files_in_directory_to_files_in_archive(
+            'flat-with-2-parent-components.tar.bz2', 'flat', [], 2)
+
     def __expect_given_difference_between_files_in_directory_to_files_in_archive(
-            self, archive_name, directory_name, expected_difference):
+            self, archive_name, directory_name, expected_difference, archive_ignore_leading_directories=0):
         test_folder = 'test-get-files-in-directory-not-in-archive'
         test_directory = os.path.join(TEST_FILES_BASE_PATH, test_folder, directory_name)
         test_archive = os.path.join(TEST_FILES_BASE_PATH, test_folder, archive_name)
-        difference = tarcheck.get_files_in_directory_not_in_archive(test_directory, test_archive)
+        difference = tarcheck.get_files_in_directory_not_in_archive(
+            test_directory, test_archive, archive_ignore_leading_directories)
         self.assertItemsEqual(difference, expected_difference)
 
 

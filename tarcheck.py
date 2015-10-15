@@ -176,20 +176,23 @@ def get_all_files_in_archive(archive_path):
     """
     tar = tarfile.open(archive_path)
     files = [f.path.replace(archive_path, "") for f in tar.getmembers()]
-
     return files
 
 
-def get_files_in_directory_not_in_archive(dir_path, archive_path):
+def get_files_in_directory_not_in_archive(dir_path, archive_path, archive_ignore_leading_directories=0):
     """
     Gets a list of what files in a give directory are not in a given archive.
     Note: only considers the relative file paths - does not match the content of files
     :param dir_path: the directory for which files are to be found and compared to those in the archive
     :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
+    :param archive_strip_components: ignores the leading n directories in the archive. Similar to --strip components
+                                     flag: http://www.gnu.org/software/tar/manual/html_section/tar_52.html#transform
     :return: a list of files that are in the given directory but not in the given archive. Empty list if no difference
     """
     files_in_dir = get_all_files_in_dir_recursively(dir_path)
     files_in_archive = get_all_files_in_archive(archive_path)
+    # Strips n leading directories from all paths in archive, where n=archive_strip_components
+    files_in_archive = [os.sep.join(x.split(os.sep)[archive_ignore_leading_directories:]) for x in files_in_archive]
     return [x for x in files_in_dir if x not in files_in_archive]
 
 
