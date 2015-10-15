@@ -51,9 +51,9 @@ import os
 import argparse
 import sys
 import hashlib
-import psutil
 import fnmatch
 import re
+import logging
 
 
 def calculate_md5(file_obj, block_size=2 ** 20):
@@ -85,7 +85,6 @@ def is_excluded(string, wildcard=None, regex=None):
         return False
 
 
-
 def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path, exclude_wildcard=None, exclude_regex=None):
     """
     :param archive_path: str - The path to the archive
@@ -101,20 +100,20 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
     total_files = 0
     errors = []
     raw_dir_parent = os.path.abspath(os.path.join(dir_path, os.pardir))
+
     with tarfile.open(name=archive_path, mode="r|*") as tar:
         for tar_info in tar:
             if not tar_info.isfile():
-                print "This is not a file - skipping checksum for: "+str(tar_info.path)
+                logging.info("This is not a file - skipping checksum for: %s" % tar_info.path)
                 continue
             if tar_info.issym():
-                print "WARNING - This archive contains symlinks that aren't dereferenced!"+str(tar_info.path)
+                logging.warning("This archive contains symlinks that aren't de-referenced: %s" % tar_info.path)
                 continue
 
             # Exclude members
             if exclude_regex or exclude_wildcard:
                 if is_excluded(tar_info.name, exclude_wildcard, exclude_regex):
                     continue
-
 
             # Pretending to extract each file - getting back a handle, but the file isn't actually extracted:
             archived_file_handle = tar.extractfile(tar_info)
@@ -145,87 +144,87 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
                 errors.append(error)
             tar.members = []
             total_files += 1
-    #print_memory_consumption()
     return (total_files, errors)
 
 
+def get_all_files_in_directory_recursively(directory_path):
+    """
+    Returns a list of all files (including folders) in a given directory.
+    :param directory_path: the directory for which files are to be found
+    :return: a list of the paths for all files in directory, where paths are relative to dir_path
+    """
+    relative_file_paths = []
 
+    for root, directories, files in os.walk(directory_path):
+        relative_directory = root.replace(directory_path, "")
+        relative_directory = relative_directory.lstrip(os.sep)
 
-def get_all_files_in_dir_recursively(dir_path):
-    print "DIR PATH: "+str(dir_path)
-    files_list = []
-    for dir_, _, files in os.walk(dir_path):
-        for fname in files:
-            #rel_dir = os.path.relpath(dir_, dir_path)
-            print "var dir_ = "+str(dir_)
-            rel_dir = os.path.relpath(dir_, dir_path)
-            print "REL_dir = "+rel_dir
-            rel_file = os.path.join(rel_dir, fname)
-            print "REL_FILE = "+str(rel_file)
-            files_list.append(rel_file)
-            print "IN dir: "+rel_file
-    return files_list
+        if root != directory_path:
+            relative_file_paths.append(relative_directory)
+
+        for file_name in files:
+            relative_file_path = os.path.join(relative_directory, file_name)
+            relative_file_paths.append(relative_file_path)
+
+    return relative_file_paths
 
 
 def get_all_files_in_archive(archive_path):
+    """
+    Returns a list of all files (including folders) in a given archive.
+    :param archive_path: the path to the archive in which files are to be found
+    :return: a list of the paths for all files in the archive, where paths are relative to the root of the archive
+    """
     tar = tarfile.open(archive_path)
-    files = [f.path for f in tar.getmembers()]
-    for f in files:
-        parent_dir = os.path.abspath(os.path.join(archive_path, os.pardir))
-        rel_dir = os.path.relpath(archive_path, parent_dir)
-        rel_file = os.path.join(rel_dir, f)
-        print "in archive: "+rel_file
+    files = [f.path.replace(archive_path, "") for f in tar.getmembers()]
     return files
 
 
-def check_all_files_in_directory_were_archived(archive_path, dir_path):
-    files_from_dir = get_all_files_in_dir_recursively(dir_path)
-    files_from_archive = get_all_files_in_archive(archive_path)
-
-    archive_file = open('/home/ic4/Downloads/archive.out', 'w')
-    for f in files_from_archive:
-        archive_file.write(f+'\n')
-
-    dir_files = open('/home/ic4/Downloads/dir.out', 'w')
-    for f in files_from_dir:
-        dir_files.write(f+'\n')
-
-# check_all_files_in_directory_were_archived('/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data.tar.bz2',
-#                                            '/home/ic4/PycharmProjects/tarchecksum/test-cases/test-deref-links/test-data/')
-
-
-
+def get_files_in_directory_not_in_archive(directory_path, archive_path, ignore_leading_directories_in_archive=0):
+    """
+    Gets a list of what files in a give directory are not in a given archive.
+    Note: only considers the relative file paths - does not match the content of files
+    :param directory_path: the directory for which files are to be found and compared to those in the archive
+    :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
+    :param ignore_leading_directories_in_archive: ignores the leading n directories in the archive. Similar to
+        --strip-components flag: http://www.gnu.org/software/tar/manual/html_section/tar_52.html#transform
+    :return: a list of files that are in the given directory but not in the given archive. Empty list if no difference
+    """
+    files_in_dir = get_all_files_in_directory_recursively(directory_path)
+    files_in_archive = get_all_files_in_archive(archive_path)
+    # Strips n leading directories from all paths in archive, where n=archive_strip_components
+    files_in_archive = [os.sep.join(x.split(os.sep)[ignore_leading_directories_in_archive:]) for x in files_in_archive]
+    return [x for x in files_in_dir if x not in files_in_archive]
 
 
-# def get_all_files_in_dir_recursively(dir_path):
-#     files_list = []
-#     for (dir_name, _, files) in os.walk(dir_path):
-#         for f in files:
-#             path = os.path.join(dir, f)
-#             files_list.append(path)
+def check_all_files_in_directory_are_in_archive(
+        directory_path, archive_path, exclude_wildcard=None, exclude_regex=None):
+    """
+    Checks that all files within the given directory are within the given archive,
+    i.e. `files(directory_path) is_subset? files(archive_path)`. Does not check the contents of the files.
+    :param directory_path: the directory for which files are to be found and compared to those in the archive
+    :param archive_path: the archive for which files are to be found and compared to those in the directory
+    :param exclude_wildcard: optional wildcard to exclude certain files or folders
+    :param exclude_regex: optional regex to exclude certain files or folders
+    :return: whether all the files in the directory are in the archive
+    """
+    archive_ignore_leading_directories = 0
 
+    while archive_ignore_leading_directories <= 1:
+        missing_files = get_files_in_directory_not_in_archive(
+            directory_path, archive_path, archive_ignore_leading_directories)
 
-# for root, dirs, files in os.walk('/home/ic4/Downloads/'):
-#     print "ROOT: " + str(root)
-#     print "DIRS: " + str(dirs)
-#     print "FILES: " + str(files)
-#
-# for (dir_name, _, files) in os.walk('/home/ic4/Downloads/'):
-#     for f in files:
-#         print os.path.join(dir_name, f)
-#         # path = os.path.join(dir_name, f)
-#         # print path
-#         #path = os.path.join(dir, f)
-#         #files_list.append(path)
+        if exclude_regex or exclude_wildcard:
+            missing_files = [x for x in missing_files if not is_excluded(x, exclude_wildcard, exclude_regex)]
 
+        if len(missing_files) == 0:
+            # All files in directory (minus excluded) were in archive
+            return True
+        else:
+            # Maybe the tar file has more leading directories? i.e. everything parent/file, parent/folder/file
+            archive_ignore_leading_directories += 1
 
-def print_memory_consumption():
-    print memory_usage()
-    import resource
-    print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-
-    p = psutil.Process(os.getpid())
-    print "Process status: "+str(p.memory_info())
+    return False
 
 
 def memory_usage():
@@ -246,13 +245,14 @@ def memory_usage():
             status.close()
     return result
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--tar_path', required=True, help='Path to the tar archive')
     parser.add_argument('--dir', required=True, help='Path to the directory that has been archived')
     parser.add_argument('--exclude', required=False, help='A shell wildcard telling which files to exclude by name')
     parser.add_argument('--exclude_regex', required=False, help='A regex telling which files to exclude by name')
-
+    parser.add_argument('--log', required=False, help='Logging level, see: https://docs.python.org/2/howto/logging.html')
 
     try:
         args = parser.parse_args()
@@ -264,8 +264,26 @@ def parse_args():
         return args
 
 
+def set_user_defined_logging_level(log_level):
+    """
+    Sets the logging level to that which the user defined in the given `log_level` argument
+    :param log_level: the log level that the user defined
+    """
+    numeric_level = getattr(logging, log_level.upper(), None)
+
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % log_level)
+
+    logging.root.setLevel(numeric_level)
+ #   logging.basicConfig(level=numeric_level)
+
+
 if __name__ == '__main__':
     args = parse_args()
+
+    if args.log:
+        set_user_defined_logging_level(args.log)
+
     try:
         total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(args.tar_path, args.dir, args.exclude, args.exclude_regex)
         print "Total files in the archive: "+str(total_files)
@@ -274,7 +292,6 @@ if __name__ == '__main__':
             print "FILES different:"
             for err in errors:
                 print str(err)
+
     except ValueError as e:
         print e.message
-
-
