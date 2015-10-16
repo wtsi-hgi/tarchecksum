@@ -75,7 +75,8 @@ def calculate_md5(file_obj, block_size=2 ** 20):
 
 def is_excluded(string, wildcard=None, regex=None):
     if not wildcard and not regex:
-        raise ValueError("No wildcard or regex provided => nothing to test")
+        # No exclusion criteria, therefore not excluded
+        return False
     if wildcard:
         return fnmatch.fnmatch(string, wildcard)
     if regex:
@@ -83,6 +84,17 @@ def is_excluded(string, wildcard=None, regex=None):
         if pattern.match(string) is not None:
             return True
         return False
+
+
+def filter_excluded_from_list(list, exclude_wildcard=None, exclude_regex=None):
+    """
+    Filters excluded strings from the given list according to the given wildcard and regex exclusion rules.
+    :param list: the list to filter
+    :param exclude_wildcard: optional wildcard to strings from list
+    :param exclude_regex: optional regex to strings from list
+    :return: the filtered list
+    """
+    return [x for x in list if not is_excluded(x, exclude_wildcard, exclude_regex)]
 
 
 def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path, exclude_wildcard=None, exclude_regex=None):
@@ -128,10 +140,10 @@ def compare_checksum_of_all_archived_files_with_raw_files(archive_path, dir_path
             if not os.path.exists(raw_file_path):
                 raw_file_path = os.path.abspath(os.path.join(raw_dir_parent, tar_info.path))
                 if not os.access(raw_file_path, os.R_OK):
-                    err_msg = "ERROR: This user can't access all the files in this directory: "+str(raw_file_path)
+                    err_msg = "ERROR: This user can't access all the files in this directory: %s" % raw_file_path
                     raise ValueError(err_msg)
                 if not os.path.isfile(raw_file_path):
-                    err_msg = "ERROR: The directory given as input doesn't contain all the files in the archive: "+str(raw_file_path)
+                    err_msg = "ERROR: The directory given as input doesn't contain all the files in the archive: %s" % raw_file_path
                     raise ValueError(err_msg)
 
             # Checksum the raw file
@@ -180,7 +192,8 @@ def get_all_files_in_archive(archive_path):
     return files
 
 
-def get_files_in_directory_not_in_archive(directory_path, archive_path, ignore_leading_directories_in_archive=0):
+def get_files_in_directory_not_in_archive(
+        directory_path, archive_path, ignore_leading_directories_in_archive=0, exclude_wildcard=None, exclude_regex=None):
     """
     Gets a list of what files in a give directory are not in a given archive.
     Note: only considers the relative file paths - does not match the content of files
@@ -188,47 +201,30 @@ def get_files_in_directory_not_in_archive(directory_path, archive_path, ignore_l
     :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
     :param ignore_leading_directories_in_archive: ignores the leading n directories in the archive. Similar to
         --strip-components flag: http://www.gnu.org/software/tar/manual/html_section/tar_52.html#transform
+    :param exclude_wildcard: optional wildcard to exclude certain files or folders
+    :param exclude_regex: optional regex to exclude certain files or folders
     :return: a list of files that are in the given directory but not in the given archive. Empty list if no difference
     """
     files_in_dir = get_all_files_in_directory_recursively(directory_path)
     files_in_archive = get_all_files_in_archive(archive_path)
+
     # Strips n leading directories from all paths in archive, where n=archive_strip_components
     files_in_archive = [os.sep.join(x.split(os.sep)[ignore_leading_directories_in_archive:]) for x in files_in_archive]
-    return [x for x in files_in_dir if x not in files_in_archive]
 
+    # Find files in directory but not in archive
+    missing_files = [x for x in files_in_dir if x not in files_in_archive]
 
-def check_all_files_in_directory_are_in_archive(
-        directory_path, archive_path, exclude_wildcard=None, exclude_regex=None):
-    """
-    Checks that all files within the given directory are within the given archive,
-    i.e. `files(directory_path) is_subset? files(archive_path)`. Does not check the contents of the files.
-    :param directory_path: the directory for which files are to be found and compared to those in the archive
-    :param archive_path: the archive for which files are to be found and compared to those in the directory
-    :param exclude_wildcard: optional wildcard to exclude certain files or folders
-    :param exclude_regex: optional regex to exclude certain files or folders
-    :return: whether all the files in the directory are in the archive
-    """
-    archive_ignore_leading_directories = 0
+    # Apply filters
+    missing_files = filter_excluded_from_list(missing_files, exclude_wildcard, exclude_regex)
 
-    while archive_ignore_leading_directories <= 1:
-        missing_files = get_files_in_directory_not_in_archive(
-            directory_path, archive_path, archive_ignore_leading_directories)
-
-        if exclude_regex or exclude_wildcard:
-            missing_files = [x for x in missing_files if not is_excluded(x, exclude_wildcard, exclude_regex)]
-
-        if len(missing_files) == 0:
-            # All files in directory (minus excluded) were in archive
-            return True
-        else:
-            # Maybe the tar file has more leading directories? i.e. everything parent/file, parent/folder/file
-            archive_ignore_leading_directories += 1
-
-    return False
+    return missing_files
 
 
 def memory_usage():
-    """Memory usage of the current process in kilobytes."""
+    """
+    Memory usage of the current process in kilobytes.
+    :return:
+    """
     status = None
     result = {'peak': 0, 'rss': 0}
     try:
@@ -247,6 +243,10 @@ def memory_usage():
 
 
 def parse_args():
+    """
+    Parses the arguments given via the command line.
+    :return: parsed arguments
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--tar_path', required=True, help='Path to the tar archive')
     parser.add_argument('--dir', required=True, help='Path to the directory that has been archived')
@@ -257,7 +257,7 @@ def parse_args():
     try:
         args = parser.parse_args()
     except IOError as e:
-        print e.strerror + ": " + e.filename
+        print "%s: %s" % (e.strerror, e.filename)
         parser.print_help()
         sys.exit(1)
     else:
@@ -275,7 +275,42 @@ def set_user_defined_logging_level(log_level):
         raise ValueError('Invalid log level: %s' % log_level)
 
     logging.root.setLevel(numeric_level)
- #   logging.basicConfig(level=numeric_level)
+
+
+def report_files_in_directory_but_not_in_archive(
+        directory_path, archive_path, exclude_wildcard=None, exclude_regex=None):
+    """
+    Creates a report of what files are in the given directory are not in the given archive (if any), considering any
+    given exclusion criteria.
+    :param directory_path: the directory for which files are to be found and compared to those in the archive
+    :param archive_path: the path to the archive in which files are to be found and compared to those in the directory
+    :param exclude_wildcard: optional wildcard to exclude certain files or folders
+    :param exclude_regex: optional regex to exclude certain files or folders
+    :return: report of what files are in the directory but not in the archive
+    """
+    files_in_directory = get_all_files_in_directory_recursively(directory_path)
+    files_in_directory = filter_excluded_from_list(files_in_directory, exclude_wildcard=None, exclude_regex=None)
+
+    archive_ignore_leading_directories = 0
+
+    while archive_ignore_leading_directories <= 1:
+        missing_files = get_files_in_directory_not_in_archive(
+            directory_path, archive_path, archive_ignore_leading_directories, exclude_wildcard, exclude_regex)
+
+        if len(missing_files) == 0:
+            # All files in directory (minus excluded) were in archive
+            return "All files in the directory are in the archive"
+
+        elif len(missing_files) < len(files_in_directory):
+            # A strict subset of the set of files in the directory are in the set of files in the archive
+            return "Some files in directory are missing from the archive: %s" % missing_files
+
+        else:
+            # Maybe the tar file has more leading directories? i.e. everything parent/file, parent/folder/file
+            archive_ignore_leading_directories += 1
+
+    # All files are missing
+    return "All files in the directory are missing from the archive: %s" % files_in_directory
 
 
 if __name__ == '__main__':
@@ -284,10 +319,16 @@ if __name__ == '__main__':
     if args.log:
         set_user_defined_logging_level(args.log)
 
+    # Report files that are in the directory but are not in the archive
+    print report_files_in_directory_but_not_in_archive(args.dir, args.tar_path, args.exclude, args.exclude_regex)
+
     try:
-        total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(args.tar_path, args.dir, args.exclude, args.exclude_regex)
-        print "Total files in the archive: "+str(total_files)
-        print "Number of files that differ between the archive and original: "+str(len(errors))
+        total_files, errors = compare_checksum_of_all_archived_files_with_raw_files(
+            args.tar_path, args.dir, args.exclude, args.exclude_regex)
+
+        print "Total files in the archive: %s" % total_files
+        print "Number of files that differ between the archive and original: %d" % len(errors)
+
         if errors:
             print "FILES different:"
             for err in errors:
@@ -295,3 +336,6 @@ if __name__ == '__main__':
 
     except ValueError as e:
         print e.message
+
+
+
