@@ -8,7 +8,7 @@ and computing the md5 checksum on each member after extracting it.
 
 Example:
 
-`$python tarcheck.py --tar_path /path/to/archive/archive.tar.bz2 --dir /path/to/the/archived/dir`
+`$ python2.7 tarcheck.py --tar_path /path/to/archive/archive.tar.bz2 --dir /path/to/the/archived/dir`
 
 where:
 * tar_path (Required) is the path to the tar archive
