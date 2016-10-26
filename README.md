@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/wtsi-hgi/tarchecksum.svg)](https://travis-ci.org/wtsi-hgi/tarchecksum)
+[![codecov.io](https://codecov.io/gh/wtsi-hgi/tarchecksum/graph/badge.svg)](https://codecov.io/github/wtsi-hgi/tarchecksum)
+
 tarchecksum
 ===========
 This module performs the checksums on all the files in a tar archive and compares them
